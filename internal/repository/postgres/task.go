@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/yrss1/todo/internal/domain/task"
 	"github.com/yrss1/todo/pkg/store"
+	"strconv"
 	"strings"
 )
 
@@ -19,33 +20,41 @@ func NewTaskRepository(db *sqlx.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r *TaskRepository) List(ctx context.Context, userID, titleFilter, statusFilter, sortBy, sortOrder string) (dest []task.Entity, err error) {
-	baseQuery := `
-        SELECT id, title, description, status 
-        FROM tasks
-        WHERE user_id = $1`
+func (r *TaskRepository) List(ctx context.Context, userID, titleFilter, statusFilter, sortBy, sortOrder string, page, limit int) ([]task.Entity, error) {
+	var (
+		baseQuery strings.Builder
+		args      []interface{}
+		dest      []task.Entity
+		paramIdx  = 1
+		offset    = (page - 1) * limit
+	)
 
-	var args []interface{}
+	baseQuery.WriteString(`SELECT id, title, description, status FROM tasks WHERE user_id = $1`)
 	args = append(args, userID)
 
 	if titleFilter != "" {
-		baseQuery += ` AND title ILIKE $2`
+		baseQuery.WriteString(fmt.Sprintf(` AND title ILIKE $%d`, paramIdx+1))
 		args = append(args, "%"+titleFilter+"%")
+		paramIdx++
 	}
 
 	if statusFilter != "" {
-		baseQuery += ` AND status = $3`
+		baseQuery.WriteString(fmt.Sprintf(` AND status = $%d`, paramIdx+1))
 		args = append(args, statusFilter)
+		paramIdx++
 	}
 
 	if sortBy != "" {
-		baseQuery += ` ORDER BY ` + sortBy + ` ` + sortOrder
+		baseQuery.WriteString(fmt.Sprintf(` ORDER BY %s %s`, sortBy, sortOrder))
 	} else {
-		baseQuery += ` ORDER BY id`
+		baseQuery.WriteString(` ORDER BY id`)
 	}
 
-	err = r.db.SelectContext(ctx, &dest, baseQuery, args...)
-	return
+	baseQuery.WriteString(fmt.Sprintf(` LIMIT $%d OFFSET $%d`, paramIdx+1, paramIdx+2))
+	args = append(args, limit, offset)
+
+	err := r.db.SelectContext(ctx, &dest, baseQuery.String(), args...)
+	return dest, err
 }
 
 func (r *TaskRepository) Add(ctx context.Context, data task.Entity) (id string, err error) {
@@ -139,4 +148,40 @@ func (r *TaskRepository) prepareArgs(data task.Entity) (sets []string, args []an
 	}
 
 	return
+}
+
+func (r *TaskRepository) buildQuery(userID, titleFilter, statusFilter, sortBy, sortOrder string) (string, []interface{}) {
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString(`
+        SELECT id, title, description, status
+        FROM tasks
+        WHERE user_id = $1`)
+
+	args := []interface{}{userID}
+
+	paramIdx := 2
+	if titleFilter != "" {
+		queryBuilder.WriteString(` AND title ILIKE $`)
+		queryBuilder.WriteString(strconv.Itoa(paramIdx))
+		args = append(args, "%"+titleFilter+"%")
+		paramIdx++
+	}
+
+	if statusFilter != "" {
+		queryBuilder.WriteString(` AND status = $`)
+		queryBuilder.WriteString(strconv.Itoa(paramIdx))
+		args = append(args, statusFilter)
+		paramIdx++
+	}
+
+	if sortBy != "" {
+		queryBuilder.WriteString(` ORDER BY `)
+		queryBuilder.WriteString(sortBy)
+		queryBuilder.WriteString(` `)
+		queryBuilder.WriteString(sortOrder)
+	} else {
+		queryBuilder.WriteString(` ORDER BY id`)
+	}
+
+	return queryBuilder.String(), args
 }

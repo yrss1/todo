@@ -142,8 +142,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all tasks for the current user with optional filtering and
-        sorting
+      description: Get all tasks for the current user with optional filtering, sorting,
+        and pagination
       parameters:
       - description: Filter tasks by title
         in: query
@@ -168,6 +168,16 @@ paths:
         in: query
         name: sortOrder
         type: string
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of tasks per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:

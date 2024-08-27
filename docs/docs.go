@@ -149,7 +149,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get all tasks for the current user with optional filtering and sorting",
+                "description": "Get all tasks for the current user with optional filtering, sorting, and pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -192,6 +192,20 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Sort order (asc or desc)",
                         "name": "sortOrder",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of tasks per page",
+                        "name": "limit",
                         "in": "query"
                     }
                 ],

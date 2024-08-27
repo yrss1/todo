@@ -7,6 +7,7 @@ import (
 	"github.com/yrss1/todo/internal/service/todo"
 	"github.com/yrss1/todo/pkg/server/response"
 	"github.com/yrss1/todo/pkg/store"
+	"strconv"
 )
 
 type TaskHandler struct {
@@ -31,7 +32,7 @@ func (h *TaskHandler) Routes(r *gin.RouterGroup) {
 
 // list godoc
 // @Summary List tasks
-// @Description Get all tasks for the current user with optional filtering and sorting
+// @Description Get all tasks for the current user with optional filtering, sorting, and pagination
 // @Tags tasks
 // @Accept  json
 // @Produce  json
@@ -40,6 +41,8 @@ func (h *TaskHandler) Routes(r *gin.RouterGroup) {
 // @Param status query string false "Filter tasks by status"
 // @Param sortBy query string false "Field to sort by (e.g., id, title)" Enums(id, title, status)
 // @Param sortOrder query string false "Sort order (asc or desc)" Enums(asc, desc)
+// @Param page query int false "Page number for pagination" default(1)
+// @Param limit query int false "Number of tasks per page" default(10)
 // @Success 200 {array} task.Response "List of tasks"
 // @Failure 400 {object} response.Object "Bad Request"
 // @Failure 500 {object} response.Object "Internal Server Error"
@@ -53,13 +56,25 @@ func (h *TaskHandler) list(c *gin.Context) {
 	sortBy := c.DefaultQuery("sortBy", "id")
 	sortOrder := c.DefaultQuery("sortOrder", "asc")
 
+	// Pagination parameters
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
 	// Validate sortOrder
 	if sortOrder != "asc" && sortOrder != "desc" {
 		response.BadRequest(c, errors.New("invalid sortOrder parameter"), nil)
 		return
 	}
 
-	res, err := h.todoService.ListTasks(c, userID, titleFilter, statusFilter, sortBy, sortOrder)
+	res, err := h.todoService.ListTasks(c, userID, titleFilter, statusFilter, sortBy, sortOrder, page, limit)
 	if err != nil {
 		response.InternalServerError(c, err)
 		return
