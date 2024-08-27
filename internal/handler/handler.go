@@ -69,10 +69,12 @@ func WithHTTPHandler() Configuration {
 		h.HTTP.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 		authHandler := http.NewAuthHandler(h.dependencies.AuthService, h.dependencies.Configs.APP.JWT)
+		healthHandler := http.NewHealthHandler()
 
 		authAPI := h.HTTP.Group(h.dependencies.Configs.APP.Path)
 		{
 			authHandler.Routes(authAPI)
+			healthHandler.Routes(authAPI)
 		}
 
 		userHandler := http.NewUserHandler(h.dependencies.AccountService)

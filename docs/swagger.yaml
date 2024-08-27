@@ -117,6 +117,27 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check the health of the application
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Health status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Object'
+      summary: Health check
+      tags:
+      - health
   /tasks:
     get:
       consumes:
