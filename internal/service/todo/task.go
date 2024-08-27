@@ -9,10 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Service) ListTasks(ctx context.Context, userID string) (res []task.Response, err error) {
+func (s *Service) ListTasks(ctx context.Context, userID, titleFilter, statusFilter, sortBy, sortOrder string) (res []task.Response, err error) {
 	logger := log.LoggerFromContext(ctx).Named("ListTasks")
 
-	data, err := s.taskRepository.List(ctx, userID)
+	data, err := s.taskRepository.List(ctx, userID, titleFilter, statusFilter, sortBy, sortOrder)
 	if err != nil {
 		logger.Error("failed to select", zap.Error(err))
 		return

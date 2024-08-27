@@ -12,8 +12,6 @@ definitions:
     properties:
       description:
         type: string
-      due_date:
-        type: string
       status:
         type: string
       title:
@@ -24,8 +22,6 @@ definitions:
   task.Response:
     properties:
       description:
-        type: string
-      due_date:
         type: string
       id:
         type: string
@@ -125,7 +121,32 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all tasks for the current user
+      description: Get all tasks for the current user with optional filtering and
+        sorting
+      parameters:
+      - description: Filter tasks by title
+        in: query
+        name: title
+        type: string
+      - description: Filter tasks by status
+        in: query
+        name: status
+        type: string
+      - description: Field to sort by (e.g., id, title)
+        enum:
+        - id
+        - title
+        - status
+        in: query
+        name: sortBy
+        type: string
+      - description: Sort order (asc or desc)
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sortOrder
+        type: string
       produces:
       - application/json
       responses:
@@ -135,6 +156,10 @@ paths:
             items:
               $ref: '#/definitions/task.Response'
             type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Object'
         "500":
           description: Internal Server Error
           schema:

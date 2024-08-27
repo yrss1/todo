@@ -31,18 +31,35 @@ func (h *TaskHandler) Routes(r *gin.RouterGroup) {
 
 // list godoc
 // @Summary List tasks
-// @Description Get all tasks for the current user
+// @Description Get all tasks for the current user with optional filtering and sorting
 // @Tags tasks
 // @Accept  json
 // @Produce  json
 // @Security BearerAuth
+// @Param title query string false "Filter tasks by title"
+// @Param status query string false "Filter tasks by status"
+// @Param sortBy query string false "Field to sort by (e.g., id, title)" Enums(id, title, status)
+// @Param sortOrder query string false "Sort order (asc or desc)" Enums(asc, desc)
 // @Success 200 {array} task.Response "List of tasks"
+// @Failure 400 {object} response.Object "Bad Request"
 // @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /tasks [get]
 func (h *TaskHandler) list(c *gin.Context) {
 	userID := c.Value("userID").(string)
 
-	res, err := h.todoService.ListTasks(c, userID)
+	// Extract query parameters
+	titleFilter := c.Query("title")
+	statusFilter := c.Query("status")
+	sortBy := c.DefaultQuery("sortBy", "id")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+
+	// Validate sortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		response.BadRequest(c, errors.New("invalid sortOrder parameter"), nil)
+		return
+	}
+
+	res, err := h.todoService.ListTasks(c, userID, titleFilter, statusFilter, sortBy, sortOrder)
 	if err != nil {
 		response.InternalServerError(c, err)
 		return

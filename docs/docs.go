@@ -117,7 +117,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get all tasks for the current user",
+                "description": "Get all tasks for the current user with optional filtering and sorting",
                 "consumes": [
                     "application/json"
                 ],
@@ -128,6 +128,41 @@ const docTemplate = `{
                     "tasks"
                 ],
                 "summary": "List tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter tasks by title",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter tasks by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "id",
+                            "title",
+                            "status"
+                        ],
+                        "type": "string",
+                        "description": "Field to sort by (e.g., id, title)",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Sort order (asc or desc)",
+                        "name": "sortOrder",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of tasks",
@@ -136,6 +171,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/task.Response"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Object"
                         }
                     },
                     "500": {
@@ -724,9 +765,6 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "due_date": {
-                    "type": "string"
-                },
                 "status": {
                     "type": "string"
                 },
@@ -742,9 +780,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-                    "type": "string"
-                },
-                "due_date": {
                     "type": "string"
                 },
                 "id": {

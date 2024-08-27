@@ -19,14 +19,32 @@ func NewTaskRepository(db *sqlx.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r *TaskRepository) List(ctx context.Context, userID string) (dest []task.Entity, err error) {
-	query := `
+func (r *TaskRepository) List(ctx context.Context, userID, titleFilter, statusFilter, sortBy, sortOrder string) (dest []task.Entity, err error) {
+	baseQuery := `
         SELECT id, title, description, status 
         FROM tasks
-        WHERE user_id = $1 
-        ORDER BY id`
+        WHERE user_id = $1`
 
-	err = r.db.SelectContext(ctx, &dest, query, userID)
+	var args []interface{}
+	args = append(args, userID)
+
+	if titleFilter != "" {
+		baseQuery += ` AND title ILIKE $2`
+		args = append(args, "%"+titleFilter+"%")
+	}
+
+	if statusFilter != "" {
+		baseQuery += ` AND status = $3`
+		args = append(args, statusFilter)
+	}
+
+	if sortBy != "" {
+		baseQuery += ` ORDER BY ` + sortBy + ` ` + sortOrder
+	} else {
+		baseQuery += ` ORDER BY id`
+	}
+
+	err = r.db.SelectContext(ctx, &dest, baseQuery, args...)
 	return
 }
 
