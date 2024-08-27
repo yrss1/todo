@@ -19,24 +19,24 @@ func NewTaskRepository(db *sqlx.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r *TaskRepository) List(ctx context.Context) (dest []task.Entity, err error) {
+func (r *TaskRepository) List(ctx context.Context, userID string) (dest []task.Entity, err error) {
 	query := `
-		SELECT id, user_id, title, description, status, due_date 
-		FROM tasks
-		ORDER BY id`
+        SELECT id, title, description, status 
+        FROM tasks
+        WHERE user_id = $1 
+        ORDER BY id`
 
-	err = r.db.SelectContext(ctx, &dest, query)
-
+	err = r.db.SelectContext(ctx, &dest, query, userID)
 	return
 }
 
 func (r *TaskRepository) Add(ctx context.Context, data task.Entity) (id string, err error) {
 	query := `
-		INSERT INTO tasks (user_id, title, description, status, due_date) 
-		VALUES ($1, $2, $3, $4, $5) 
+		INSERT INTO tasks (user_id, title, description, status) 
+		VALUES ($1, $2, $3, $4) 
 		RETURNING id`
 
-	args := []any{data.UserID, data.Title, data.Description, data.Status, data.DueDate}
+	args := []any{data.UserID, data.Title, data.Description, data.Status}
 
 	if err = r.db.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -47,33 +47,37 @@ func (r *TaskRepository) Add(ctx context.Context, data task.Entity) (id string, 
 	return
 }
 
-func (r *TaskRepository) Get(ctx context.Context, id string) (dest task.Entity, err error) {
+func (r *TaskRepository) Get(ctx context.Context, userID string, taskID string) (dest task.Entity, err error) {
 	query := `
-		SELECT id, user_id, title, description, status, due_date
-		FROM tasks
-		WHERE id=$1`
+	   SELECT id, title, description, status
+	   FROM tasks
+	   WHERE id = $1 AND user_id = $2`
 
-	args := []any{id}
+	args := []any{taskID, userID}
 
 	if err = r.db.GetContext(ctx, &dest, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = store.ErrorNotFound
 		}
 	}
-
 	return
 }
 
-func (r *TaskRepository) Update(ctx context.Context, id string, data task.Entity) (err error) {
+func (r *TaskRepository) Update(ctx context.Context, userID string, taskID string, data task.Entity) (err error) {
 	sets, args := r.prepareArgs(data)
 
 	if len(args) > 0 {
-		args = append(args, id)
+		args = append(args, taskID, userID)
 		sets = append(sets, "updated_at=CURRENT_TIMESTAMP")
 
-		query := fmt.Sprintf("UPDATE tasks SET %s WHERE id=$%d RETURNING id", strings.Join(sets, ", "), len(args))
+		query := fmt.Sprintf(
+			"UPDATE tasks SET %s WHERE id=$%d AND user_id=$%d RETURNING id",
+			strings.Join(sets, ", "),
+			len(args)-1, // Позиция taskID
+			len(args),   // Позиция userID
+		)
 
-		if err = r.db.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
+		if err = r.db.QueryRowContext(ctx, query, args...).Scan(&taskID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				err = store.ErrorNotFound
 			}
@@ -83,15 +87,15 @@ func (r *TaskRepository) Update(ctx context.Context, id string, data task.Entity
 	return
 }
 
-func (r *TaskRepository) Delete(ctx context.Context, id string) (err error) {
+func (r *TaskRepository) Delete(ctx context.Context, userID string, taskID string) (err error) {
 	query := `
-		DELETE FROM tasks
-		WHERE id=$1
-		RETURNING id`
+        DELETE FROM tasks
+        WHERE id = $1 AND user_id = $2
+        RETURNING id`
 
-	args := []any{id}
+	args := []any{taskID, userID}
 
-	if err = r.db.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
+	if err = r.db.QueryRowContext(ctx, query, args...).Scan(&taskID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = store.ErrorNotFound
 		}
@@ -100,24 +104,7 @@ func (r *TaskRepository) Delete(ctx context.Context, id string) (err error) {
 	return
 }
 
-func (r *TaskRepository) Search(ctx context.Context, data task.Entity) (dest []task.Entity, err error) {
-	query := "SELECT id, user_id, title, description, status, due_date FROM tasks WHERE 1=1"
-	sets, args := r.prepareArgs(data)
-	if len(sets) > 0 {
-		query += " AND " + strings.Join(sets, " AND ")
-	}
-
-	err = r.db.SelectContext(ctx, &dest, query, args...)
-
-	return
-}
-
 func (r *TaskRepository) prepareArgs(data task.Entity) (sets []string, args []any) {
-	if data.UserID != nil {
-		args = append(args, data.UserID)
-		sets = append(sets, fmt.Sprintf("user_id=$%d", len(args)))
-	}
-
 	if data.Title != nil {
 		args = append(args, data.Title)
 		sets = append(sets, fmt.Sprintf("title=$%d", len(args)))
@@ -131,11 +118,6 @@ func (r *TaskRepository) prepareArgs(data task.Entity) (sets []string, args []an
 	if data.Status != nil {
 		args = append(args, data.Status)
 		sets = append(sets, fmt.Sprintf("status=$%d", len(args)))
-	}
-
-	if data.DueDate != nil {
-		args = append(args, data.DueDate)
-		sets = append(sets, fmt.Sprintf("due_date=$%d", len(args)))
 	}
 
 	return

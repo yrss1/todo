@@ -8,6 +8,7 @@ import (
 	"github.com/yrss1/todo/internal/handler"
 	"github.com/yrss1/todo/internal/repository"
 	"github.com/yrss1/todo/internal/service/account"
+	"github.com/yrss1/todo/internal/service/auth"
 	"github.com/yrss1/todo/internal/service/todo"
 	"github.com/yrss1/todo/pkg/log"
 	"github.com/yrss1/todo/pkg/server"
@@ -33,6 +34,10 @@ func Run() {
 		return
 	}
 
+	authService, err := auth.New(
+		auth.WithUserRepository(repositories.User),
+	)
+
 	accountService, err := account.New(
 		account.WithUserRepository(repositories.User),
 	)
@@ -51,6 +56,7 @@ func Run() {
 	handlers, err := handler.New(
 		handler.Dependencies{
 			Configs:        configs,
+			AuthService:    authService,
 			AccountService: accountService,
 			TodoService:    todoService,
 		},
@@ -69,7 +75,7 @@ func Run() {
 		logger.Error("ERR_RUN_SERVERS", zap.Error(err))
 		return
 	}
-	logger.Info("http server started on http://localhost:" + configs.APP.Port)
+	logger.Info("http server started on http://localhost:" + configs.APP.Port + "/swagger/index.html")
 
 	var wait time.Duration
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the httpServer gracefully wait for existing connections to finish - e.g. 15s or 1m")

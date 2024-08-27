@@ -29,6 +29,7 @@ type (
 		GRPCPort string
 		Path     string
 		Timeout  time.Duration
+		JWT      []byte
 	}
 
 	StoreConfig struct {

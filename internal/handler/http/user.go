@@ -30,7 +30,6 @@ func (h *UserHandler) Routes(r *gin.RouterGroup) {
 
 		api.GET("/search", h.search)
 		api.GET("/email", h.getByEmail)
-
 	}
 }
 
@@ -40,8 +39,9 @@ func (h *UserHandler) Routes(r *gin.RouterGroup) {
 // @Tags users
 // @Accept  json
 // @Produce  json
-// @Success 200 {array} user.Response
-// @Failure 500 {object} response.Object
+// @Security BearerAuth
+// @Success 200 {array} user.Response "List of users"
+// @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /users [get]
 func (h *UserHandler) list(c *gin.Context) {
 	res, err := h.accountService.ListUsers(c)
@@ -59,10 +59,11 @@ func (h *UserHandler) list(c *gin.Context) {
 // @Tags users
 // @Accept  json
 // @Produce  json
+// @Security BearerAuth
 // @Param user body user.Request true "User request"
-// @Success 200 {object} user.Response
-// @Failure 400 {object} response.Object
-// @Failure 500 {object} response.Object
+// @Success 200 {object} user.Response "User created successfully"
+// @Failure 400 {object} response.Object "Bad Request"
+// @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /users [post]
 func (h *UserHandler) add(c *gin.Context) {
 	req := user.Request{}
@@ -90,10 +91,11 @@ func (h *UserHandler) add(c *gin.Context) {
 // @Tags users
 // @Accept  json
 // @Produce  json
+// @Security BearerAuth
 // @Param id path string true "User ID"
-// @Success 200 {object} user.Response
-// @Failure 404 {object} response.Object
-// @Failure 500 {object} response.Object
+// @Success 200 {object} user.Response "User details"
+// @Failure 404 {object} response.Object "User not found"
+// @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /users/{id} [get]
 func (h *UserHandler) get(c *gin.Context) {
 	id := c.Param("id")
@@ -118,12 +120,13 @@ func (h *UserHandler) get(c *gin.Context) {
 // @Tags users
 // @Accept  json
 // @Produce  json
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Param user body user.Request true "User request"
 // @Success 200 {string} string "ok"
-// @Failure 400 {object} response.Object
-// @Failure 404 {object} response.Object
-// @Failure 500 {object} response.Object
+// @Failure 400 {object} response.Object "Bad Request"
+// @Failure 404 {object} response.Object "User not found"
+// @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /users/{id} [put]
 func (h *UserHandler) update(c *gin.Context) {
 	id := c.Param("id")
@@ -158,10 +161,11 @@ func (h *UserHandler) update(c *gin.Context) {
 // @Tags users
 // @Accept  json
 // @Produce  json
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {string} string "User deleted"
-// @Failure 404 {object} response.Object
-// @Failure 500 {object} response.Object
+// @Failure 404 {object} response.Object "User not found"
+// @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /users/{id} [delete]
 func (h *UserHandler) delete(c *gin.Context) {
 	id := c.Param("id")
@@ -176,7 +180,7 @@ func (h *UserHandler) delete(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, id)
+	response.OK(c, "User deleted")
 }
 
 // search godoc
@@ -185,11 +189,12 @@ func (h *UserHandler) delete(c *gin.Context) {
 // @Tags users
 // @Accept  json
 // @Produce  json
+// @Security BearerAuth
 // @Param name query string false "Name"
 // @Param email query string false "Email"
-// @Success 200 {array} user.Response
-// @Failure 400 {object} response.Object
-// @Failure 500 {object} response.Object
+// @Success 200 {array} user.Response "List of users matching the search criteria"
+// @Failure 400 {object} response.Object "Bad Request"
+// @Failure 500 {object} response.Object "Internal Server Error"
 // @Router /users/search [get]
 func (h *UserHandler) search(c *gin.Context) {
 	req := user.Request{
@@ -211,6 +216,18 @@ func (h *UserHandler) search(c *gin.Context) {
 	response.OK(c, res)
 }
 
+// getByEmail godoc
+// @Summary Get user by email
+// @Description Get user details by email
+// @Tags users
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param email query string true "User Email"
+// @Success 200 {object} user.Response "User details"
+// @Failure 404 {object} response.Object "User not found"
+// @Failure 500 {object} response.Object "Internal Server Error"
+// @Router /users/email [get]
 func (h *UserHandler) getByEmail(c *gin.Context) {
 	email := c.Query("email")
 

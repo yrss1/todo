@@ -6,12 +6,10 @@ import (
 )
 
 type Request struct {
-	ID          string  `json:"id"`
 	UserID      *string `json:"user_id"`
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
 	Status      *string `json:"status"`
-	DueDate     *string `json:"due_date"`
 }
 
 func (s *Request) Validate() error {
@@ -36,7 +34,7 @@ func (s *Request) Validate() error {
 
 func (s *Request) IsEmpty(check string) error {
 	if check == "update" {
-		if s.UserID == nil && s.Title == nil && s.Description == nil && s.DueDate == nil && s.Status == nil {
+		if s.UserID == nil && s.Title == nil && s.Description == nil && s.Status == nil {
 			return errors.New("data cannot be blank")
 		}
 		if s.Status != nil && (*s.Status != "active" && *s.Status != "done") {
@@ -55,27 +53,21 @@ func (s *Request) IsEmpty(check string) error {
 
 type Response struct {
 	ID          string `json:"id"`
-	UserID      string `json:"user_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Status      string `json:"status"`
-	DueDate     string `json:"due_date"`
 }
 
 func ParseFromEntity(data Entity) (res Response) {
 	res = Response{
-		ID:     data.ID,
-		UserID: *data.UserID,
-		Title:  *data.Title,
+		ID:    data.ID,
+		Title: *data.Title,
 	}
 	if data.Description != nil {
 		res.Description = *data.Description
 	}
 	if data.Status != nil {
 		res.Status = *data.Status
-	}
-	if data.DueDate != nil {
-		res.DueDate = *data.DueDate
 	}
 	return
 }

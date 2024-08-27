@@ -133,7 +133,7 @@ func (r *UserRepository) prepareArgs(data user.Entity) (sets []string, args []an
 }
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (dest user.Entity, err error) {
-	query := `SELECT id, name, email from users where email=$1`
+	query := `SELECT id, name, email, password from users where email=$1`
 
 	args := []any{email}
 
