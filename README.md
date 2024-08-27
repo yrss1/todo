@@ -79,6 +79,3 @@ If you encounter issues, ensure that:
 - All necessary environment variables are correctly set.
 - Check the application logs for any errors that might indicate the problem.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
